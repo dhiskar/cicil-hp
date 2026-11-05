@@ -6,7 +6,7 @@
    ============================================================ */
 'use strict';
 
-var CACHE = 'cicilan-hp-v1.4-1';
+var CACHE = 'cicilan-hp-v1.5-1';
 var BASE = new URL('./', self.location.href);
 function u(p) { return new URL(p, BASE).href; }
 var SHELL = [

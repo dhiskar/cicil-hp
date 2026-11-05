@@ -132,8 +132,9 @@ html[data-theme="light"] .toast.ok{background:#ECFDF5;color:#065F46;border-color
 
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0}
-html{-webkit-text-size-adjust:100%}
+html{-webkit-text-size-adjust:100%;overscroll-behavior-y:none}
 body{
+  overscroll-behavior-y:none;
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
   background:
     radial-gradient(900px 520px at 85% -8%, rgba(52,211,153,.16), transparent 62%),
@@ -1303,6 +1304,46 @@ document.addEventListener('change', function (e) {
   }
 })();
 
+/* ---------- matikan pull-to-refresh ----------
+   Menarik ke bawah di posisi paling atas tidak boleh memuat ulang halaman.
+   Kalau halaman ter-reload, izin file di HP harus diaktifkan lagi.
+   CSS overscroll-behavior sudah menangani Chrome baru; blok ini hanya
+   cadangan untuk browser lama yang belum mendukungnya. */
+(function matikanPullRefresh() {
+  var didukung = false;
+  try {
+    didukung = !!(window.CSS && CSS.supports && CSS.supports('overscroll-behavior-y', 'contain'));
+  } catch (e) {}
+  if (didukung) return;
+
+  var awalY = 0, aktif = false;
+
+  function bisaGulirSendiri(el) {
+    while (el && el !== document.body && el !== document.documentElement) {
+      var st;
+      try { st = getComputedStyle(el); } catch (e) { return false; }
+      if (/(auto|scroll)/.test(st.overflowY) && el.scrollHeight > el.clientHeight + 2) return true;
+      el = el.parentElement;
+    }
+    return false;
+  }
+
+  document.addEventListener('touchstart', function (e) {
+    if (e.touches.length !== 1) { aktif = false; return; }
+    aktif = !bisaGulirSendiri(e.target);
+    awalY = e.touches[0].clientY;
+  }, { passive: true });
+
+  document.addEventListener('touchmove', function (e) {
+    if (!aktif || e.touches.length !== 1) return;
+    var atas = (window.scrollY || document.documentElement.scrollTop || 0) <= 0;
+    if (atas && e.touches[0].clientY - awalY > 0 && e.cancelable) e.preventDefault();
+  }, { passive: false });
+
+  document.addEventListener('touchend', function () { aktif = false; }, { passive: true });
+  document.addEventListener('touchcancel', function () { aktif = false; }, { passive: true });
+})();
+
 /* ============================================================
    Tampilan (views)
    ============================================================ */
@@ -2205,7 +2246,7 @@ function pengaturanBody() {
         '<button class="btn btn-danger-ghost btn-sm" data-act="reset">' + icon('trash') + 'Hapus semua data</button>' +
       '</div>' +
       '<div class="divider"></div>' +
-      '<div class="tiny dim" style="line-height:1.7">Aplikasi Cicilan HP v1.4<br>' +
+      '<div class="tiny dim" style="line-height:1.7">Aplikasi Cicilan HP v1.5<br>' +
       db.pelanggan.length + ' pelanggan · ' + db.kontrak.length + ' kontrak · ' + db.cicilan.length + ' pembayaran<br>' +
       (linked ? 'Tersimpan otomatis ke file di HP.' : 'Data tersimpan di browser perangkat ini.') + '</div>';
 }
